@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Zap, Target, Trophy, Calendar } from "lucide-react";
 import { ProgressRing } from "@/components/member/ProgressRing";
@@ -7,10 +8,10 @@ import { BottomNav } from "@/components/member/BottomNav";
 import { CheckInButton } from "@/components/member/CheckInButton";
 import { StreakBadge } from "@/components/member/StreakBadge";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 // Mock data - will be replaced with real data from Lovable Cloud
 const mockData = {
-  userName: "Alex",
   gymName: "FitZone Elite",
   weeklyGoal: 4,
   visitsThisWeek: 3,
@@ -20,10 +21,18 @@ const mockData = {
 };
 
 const Index = () => {
+  const { user, isLoading } = useAuth();
+  const navigate = useNavigate();
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [visits, setVisits] = useState(mockData.visitsThisWeek);
   const [points, setPoints] = useState(mockData.totalPoints);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate("/auth");
+    }
+  }, [user, isLoading, navigate]);
 
   const progress = (visits / mockData.weeklyGoal) * 100;
   const visitsRemaining = mockData.weeklyGoal - visits;
@@ -39,6 +48,21 @@ const Index = () => {
     });
   };
 
+  // Get user's name from metadata or email
+  const userName = user?.user_metadata?.name || user?.email?.split("@")[0] || "Champion";
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen pb-24">
       {/* Header */}
@@ -50,7 +74,7 @@ const Index = () => {
         >
           <div>
             <p className="text-muted-foreground text-sm">Welcome back,</p>
-            <h1 className="text-2xl font-bold text-foreground">{mockData.userName}</h1>
+            <h1 className="text-2xl font-bold text-foreground">{userName}</h1>
           </div>
           <StreakBadge streak={mockData.streak} />
         </motion.div>
