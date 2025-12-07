@@ -1,12 +1,154 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Zap, Target, Trophy, Calendar } from "lucide-react";
+import { ProgressRing } from "@/components/member/ProgressRing";
+import { StatCard } from "@/components/member/StatCard";
+import { BottomNav } from "@/components/member/BottomNav";
+import { CheckInButton } from "@/components/member/CheckInButton";
+import { StreakBadge } from "@/components/member/StreakBadge";
+import { useToast } from "@/hooks/use-toast";
+
+// Mock data - will be replaced with real data from Lovable Cloud
+const mockData = {
+  userName: "Alex",
+  gymName: "FitZone Elite",
+  weeklyGoal: 4,
+  visitsThisWeek: 3,
+  streak: 5,
+  totalPoints: 2450,
+  pointsThisWeek: 150,
+};
 
 const Index = () => {
+  const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const [visits, setVisits] = useState(mockData.visitsThisWeek);
+  const [points, setPoints] = useState(mockData.totalPoints);
+  const { toast } = useToast();
+
+  const progress = (visits / mockData.weeklyGoal) * 100;
+  const visitsRemaining = mockData.weeklyGoal - visits;
+
+  const handleCheckIn = () => {
+    setIsCheckedIn(true);
+    setVisits((prev) => prev + 1);
+    setPoints((prev) => prev + 50);
+    
+    toast({
+      title: "🎉 Check-in successful!",
+      description: "+50 points earned. Keep crushing it!",
+    });
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen pb-24">
+      {/* Header */}
+      <header className="px-5 pt-12 pb-6">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between"
+        >
+          <div>
+            <p className="text-muted-foreground text-sm">Welcome back,</p>
+            <h1 className="text-2xl font-bold text-foreground">{mockData.userName}</h1>
+          </div>
+          <StreakBadge streak={mockData.streak} />
+        </motion.div>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="text-sm text-primary mt-1"
+        >
+          {mockData.gymName}
+        </motion.p>
+      </header>
+
+      {/* Main Content */}
+      <main className="px-5 space-y-6">
+        {/* Weekly Goal Progress */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="glass rounded-3xl p-6 flex flex-col items-center"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <Target className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Weekly Goal</h2>
+          </div>
+          
+          <ProgressRing progress={Math.min(progress, 100)} size={180} strokeWidth={14}>
+            <div className="text-center">
+              <span className="text-4xl font-bold text-foreground">{visits}</span>
+              <span className="text-xl text-muted-foreground">/{mockData.weeklyGoal}</span>
+              <p className="text-sm text-muted-foreground mt-1">visits</p>
+            </div>
+          </ProgressRing>
+
+          <p className="text-center mt-4 text-muted-foreground">
+            {progress >= 100 ? (
+              <span className="text-primary font-semibold">🎯 Goal achieved! Amazing work!</span>
+            ) : (
+              <>
+                <span className="text-foreground font-semibold">{visitsRemaining} more</span>
+                {" "}visit{visitsRemaining !== 1 ? "s" : ""} to hit your goal
+              </>
+            )}
+          </p>
+        </motion.section>
+
+        {/* Check-in Button */}
+        <CheckInButton onCheckIn={handleCheckIn} isCheckedIn={isCheckedIn} />
+
+        {/* Stats Grid */}
+        <section className="grid grid-cols-2 gap-4">
+          <StatCard
+            icon={Zap}
+            label="Total Points"
+            value={points.toLocaleString()}
+            delay={0.2}
+          />
+          <StatCard
+            icon={Calendar}
+            label="This Week"
+            value={`+${mockData.pointsThisWeek}`}
+            subtext="pts"
+            delay={0.25}
+          />
+          <StatCard
+            icon={Trophy}
+            label="Rank"
+            value="#12"
+            subtext="of 156"
+            delay={0.3}
+          />
+          <StatCard
+            icon={Target}
+            label="Goals Hit"
+            value="8"
+            subtext="this month"
+            delay={0.35}
+          />
+        </section>
+
+        {/* Quick Summary */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="glass rounded-2xl p-5"
+        >
+          <h3 className="font-semibold text-foreground mb-2">💪 Your Progress</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            You're on a <span className="text-orange-500 font-semibold">{mockData.streak}-week streak</span>! 
+            Keep it up to earn bonus points. You're ranked in the{" "}
+            <span className="text-primary font-semibold">top 10%</span> of your gym this month.
+          </p>
+        </motion.section>
+      </main>
+
+      <BottomNav />
     </div>
   );
 };
