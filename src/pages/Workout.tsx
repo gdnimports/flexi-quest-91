@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { BottomNav } from "@/components/member/BottomNav";
+import { supabase } from "@/integrations/supabase/client";
 
 const workoutTypes = [
   { value: "weights", label: "Weights", icon: Dumbbell, color: "text-blue-400" },
@@ -42,43 +43,31 @@ interface Exercise {
   isAISuggested?: boolean;
 }
 
-// Mock AI suggestions - will be replaced with Lovable AI
-const mockAISuggestions: Record<string, Exercise[]> = {
-  weights: [
-    { id: "1", name: "Bench Press", sets: 3, reps: 10, isAISuggested: true },
-    { id: "2", name: "Squats", sets: 3, reps: 12, isAISuggested: true },
-    { id: "3", name: "Deadlift", sets: 3, reps: 8, isAISuggested: true },
-    { id: "4", name: "Shoulder Press", sets: 3, reps: 10, isAISuggested: true },
-  ],
-  cardio: [
-    { id: "1", name: "Treadmill Jog", duration: 15, isAISuggested: true },
-    { id: "2", name: "Stationary Bike", duration: 10, isAISuggested: true },
-    { id: "3", name: "Rowing Machine", duration: 10, isAISuggested: true },
-    { id: "4", name: "Jump Rope", duration: 5, isAISuggested: true },
-  ],
-  aerobics: [
-    { id: "1", name: "Step Aerobics", duration: 20, isAISuggested: true },
-    { id: "2", name: "Dance Cardio", duration: 15, isAISuggested: true },
-    { id: "3", name: "Low-Impact Aerobics", duration: 15, isAISuggested: true },
-  ],
-  hiit: [
-    { id: "1", name: "Burpees", sets: 4, reps: 10, isAISuggested: true },
-    { id: "2", name: "Mountain Climbers", sets: 4, reps: 20, isAISuggested: true },
-    { id: "3", name: "Box Jumps", sets: 4, reps: 12, isAISuggested: true },
-    { id: "4", name: "Kettlebell Swings", sets: 4, reps: 15, isAISuggested: true },
-  ],
-  spinning: [
-    { id: "1", name: "Warm-up Ride", duration: 5, isAISuggested: true },
-    { id: "2", name: "Hill Climb", duration: 10, isAISuggested: true },
-    { id: "3", name: "Sprint Intervals", duration: 10, isAISuggested: true },
-    { id: "4", name: "Cool Down", duration: 5, isAISuggested: true },
-  ],
-  other: [
-    { id: "1", name: "Stretching", duration: 10, isAISuggested: true },
-    { id: "2", name: "Yoga Flow", duration: 15, isAISuggested: true },
-    { id: "3", name: "Foam Rolling", duration: 10, isAISuggested: true },
-  ],
-};
+// Fetch AI exercise suggestions from edge function
+async function fetchAISuggestions(workoutType: string): Promise<Exercise[]> {
+  const { data, error } = await supabase.functions.invoke("suggest-exercises", {
+    body: { workout_type: workoutType, experience_level: "beginner" },
+  });
+
+  if (error) {
+    console.error("Error fetching AI suggestions:", error);
+    throw new Error(error.message || "Failed to fetch suggestions");
+  }
+
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
+  // Transform API response to Exercise format
+  return (data.exercises || []).map((ex: any, idx: number) => ({
+    id: `ai-${idx}`,
+    name: ex.name,
+    sets: ex.sets,
+    reps: ex.reps,
+    duration: ex.duration_minutes,
+    isAISuggested: true,
+  }));
+}
 
 const Workout = () => {
   const navigate = useNavigate();
@@ -101,13 +90,16 @@ const Workout = () => {
     setIsLoadingAI(true);
     setExercises([]);
 
-    // Simulate AI API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    const suggestions = mockAISuggestions[type] || [];
-    setExercises(suggestions.map((ex, idx) => ({ ...ex, id: `ai-${idx}` })));
-    setIsLoadingAI(false);
-    toast.success("AI generated exercise suggestions!");
+    try {
+      const suggestions = await fetchAISuggestions(type);
+      setExercises(suggestions);
+      toast.success("AI generated exercise suggestions!");
+    } catch (error: any) {
+      console.error("Failed to get AI suggestions:", error);
+      toast.error(error.message || "Failed to get AI suggestions");
+    } finally {
+      setIsLoadingAI(false);
+    }
   };
 
   const handleAddExercise = () => {

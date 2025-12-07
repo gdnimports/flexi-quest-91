@@ -1,1 +1,4 @@
 project_id = "cuhxzbsvpywyrakqmpka"
+
+[functions.suggest-exercises]
+verify_jwt = false
