@@ -156,9 +156,9 @@ const Auth = () => {
           >
             <Dumbbell className="w-8 h-8 text-primary" />
           </motion.div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">FlexiQuest</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Fit Dash</h1>
           <p className="text-muted-foreground">
-            {isLogin ? "Welcome back, champion!" : "Start your fitness journey"}
+            {isLogin ? "Welcome back, champion!" : "Gamify your fitness journey"}
           </p>
         </div>
 

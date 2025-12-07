@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Zap, Target, Trophy, Calendar } from "lucide-react";
+import { Zap, Target, Trophy, Calendar, Dumbbell } from "lucide-react";
 import { ProgressRing } from "@/components/member/ProgressRing";
 import { StatCard } from "@/components/member/StatCard";
 import { BottomNav } from "@/components/member/BottomNav";
 import { CheckInButton } from "@/components/member/CheckInButton";
 import { StreakBadge } from "@/components/member/StreakBadge";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -18,6 +19,8 @@ const mockData = {
   streak: 5,
   totalPoints: 2450,
   pointsThisWeek: 150,
+  hasGym: true, // Set to false to test join gym flow
+  hasGoal: true, // Set to false to test set goal flow
 };
 
 const Index = () => {
@@ -31,6 +34,14 @@ const Index = () => {
   useEffect(() => {
     if (!isLoading && !user) {
       navigate("/auth");
+    }
+    // Redirect based on onboarding state
+    if (!isLoading && user) {
+      if (!mockData.hasGym) {
+        navigate("/join-gym");
+      } else if (!mockData.hasGoal) {
+        navigate("/set-goal");
+      }
     }
   }, [user, isLoading, navigate]);
 
@@ -122,8 +133,18 @@ const Index = () => {
           </p>
         </motion.section>
 
-        {/* Check-in Button */}
-        <CheckInButton onCheckIn={handleCheckIn} isCheckedIn={isCheckedIn} />
+        {/* Action Buttons */}
+        <div className="grid grid-cols-2 gap-4">
+          <CheckInButton onCheckIn={handleCheckIn} isCheckedIn={isCheckedIn} />
+          <Button
+            onClick={() => navigate("/workout")}
+            variant="secondary"
+            className="h-14 rounded-2xl font-semibold gap-2"
+          >
+            <Dumbbell className="w-5 h-5" />
+            Track Workout
+          </Button>
+        </div>
 
         {/* Stats Grid */}
         <section className="grid grid-cols-2 gap-4">

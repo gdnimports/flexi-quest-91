@@ -19,14 +19,12 @@ export function CheckInButton({ onCheckIn, isCheckedIn }: CheckInButtonProps) {
         <div className="absolute inset-0 rounded-2xl bg-primary/30 animate-pulse-ring" />
       )}
       <Button
-        variant="hero"
-        size="xl"
         onClick={onCheckIn}
         disabled={isCheckedIn}
-        className="w-full relative z-10"
+        className="w-full h-14 rounded-2xl font-semibold gap-2 relative z-10 glow-button"
       >
-        <QrCode className="w-6 h-6" />
-        {isCheckedIn ? "Checked In Today" : "Check In Now"}
+        <QrCode className="w-5 h-5" />
+        {isCheckedIn ? "Checked In" : "Check In"}
       </Button>
     </motion.div>
   );

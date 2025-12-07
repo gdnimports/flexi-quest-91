@@ -9,6 +9,9 @@ import Leaderboard from "./pages/Leaderboard";
 import Rewards from "./pages/Rewards";
 import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
+import JoinGym from "./pages/JoinGym";
+import SetGoal from "./pages/SetGoal";
+import Workout from "./pages/Workout";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +26,9 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/join-gym" element={<JoinGym />} />
+            <Route path="/set-goal" element={<SetGoal />} />
+            <Route path="/workout" element={<Workout />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/rewards" element={<Rewards />} />
             <Route path="/profile" element={<Profile />} />
