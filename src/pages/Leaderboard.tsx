@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Trophy, Medal, ChevronUp, ChevronDown } from "lucide-react";
+import { Trophy, Medal, ChevronUp, ChevronDown, Globe, Building2 } from "lucide-react";
 import { BottomNav } from "@/components/member/BottomNav";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 
 type Period = "week" | "month";
+type Scope = "gym" | "all";
 
 interface LeaderboardEntry {
   rank: number;
@@ -15,6 +16,7 @@ interface LeaderboardEntry {
   visits: number;
   change: number;
   isCurrentUser?: boolean;
+  gymName?: string;
 }
 
 const getRankIcon = (rank: number) => {
@@ -32,6 +34,7 @@ const getRankIcon = (rank: number) => {
 
 const Leaderboard = () => {
   const [period, setPeriod] = useState<Period>("week");
+  const [scope, setScope] = useState<Scope>("gym");
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [gymName, setGymName] = useState<string>("Fitdash Pro");
@@ -53,55 +56,100 @@ const Leaderboard = () => {
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (!profile?.gym_id) {
-        setLoading(false);
-        return;
+      if (scope === "gym") {
+        if (!profile?.gym_id) {
+          setLoading(false);
+          return;
+        }
+
+        // Get gym name
+        const { data: gym } = await supabase
+          .from("gyms")
+          .select("name")
+          .eq("id", profile.gym_id)
+          .maybeSingle();
+
+        if (gym?.name) {
+          setGymName(gym.name);
+        }
+
+        // Get all members of the same gym
+        const { data: members } = await supabase
+          .from("profiles")
+          .select("user_id, name")
+          .eq("gym_id", profile.gym_id);
+
+        if (!members || members.length === 0) {
+          setLeaderboard([]);
+          setLoading(false);
+          return;
+        }
+
+        // Generate mock points/visits for demo
+        const leaderboardData: LeaderboardEntry[] = members.map((member) => ({
+          rank: 0,
+          name: member.name || "Unknown",
+          points: Math.floor(Math.random() * 2000) + 500,
+          visits: Math.floor(Math.random() * 20) + 5,
+          change: Math.floor(Math.random() * 5) - 2,
+          isCurrentUser: member.user_id === user.id,
+        }));
+
+        // Sort by points and assign ranks
+        leaderboardData.sort((a, b) => b.points - a.points);
+        leaderboardData.forEach((entry, index) => {
+          entry.rank = index + 1;
+        });
+
+        setLeaderboard(leaderboardData);
+      } else {
+        // Fetch all members across all gyms
+        setGymName("All Gyms");
+
+        const { data: allMembers } = await supabase
+          .from("profiles")
+          .select("user_id, name, gym_id");
+
+        if (!allMembers || allMembers.length === 0) {
+          setLeaderboard([]);
+          setLoading(false);
+          return;
+        }
+
+        // Get gym names for all unique gym_ids
+        const gymIds = [...new Set(allMembers.filter(m => m.gym_id).map(m => m.gym_id))];
+        const { data: gyms } = await supabase
+          .from("gyms")
+          .select("id, name")
+          .in("id", gymIds);
+
+        const gymMap = new Map(gyms?.map(g => [g.id, g.name]) || []);
+
+        // Generate mock points/visits for demo
+        const leaderboardData: LeaderboardEntry[] = allMembers.map((member) => ({
+          rank: 0,
+          name: member.name || "Unknown",
+          points: Math.floor(Math.random() * 2000) + 500,
+          visits: Math.floor(Math.random() * 20) + 5,
+          change: Math.floor(Math.random() * 5) - 2,
+          isCurrentUser: member.user_id === user.id,
+          gymName: member.gym_id ? gymMap.get(member.gym_id) || "Unknown Gym" : "No Gym",
+        }));
+
+        // Sort by points and assign ranks
+        leaderboardData.sort((a, b) => b.points - a.points);
+        leaderboardData.forEach((entry, index) => {
+          entry.rank = index + 1;
+        });
+
+        setLeaderboard(leaderboardData);
       }
 
-      // Get gym name
-      const { data: gym } = await supabase
-        .from("gyms")
-        .select("name")
-        .eq("id", profile.gym_id)
-        .maybeSingle();
-
-      if (gym?.name) {
-        setGymName(gym.name);
-      }
-
-      // Get all members of the same gym
-      const { data: members } = await supabase
-        .from("profiles")
-        .select("user_id, name")
-        .eq("gym_id", profile.gym_id);
-
-      if (!members || members.length === 0) {
-        setLoading(false);
-        return;
-      }
-
-      // Generate mock points/visits for demo (in production, this would come from actual check-in data)
-      const leaderboardData: LeaderboardEntry[] = members.map((member, index) => ({
-        rank: 0,
-        name: member.name || "Unknown",
-        points: Math.floor(Math.random() * 2000) + 500,
-        visits: Math.floor(Math.random() * 20) + 5,
-        change: Math.floor(Math.random() * 5) - 2,
-        isCurrentUser: member.user_id === user.id,
-      }));
-
-      // Sort by points and assign ranks
-      leaderboardData.sort((a, b) => b.points - a.points);
-      leaderboardData.forEach((entry, index) => {
-        entry.rank = index + 1;
-      });
-
-      setLeaderboard(leaderboardData);
       setLoading(false);
     };
 
     fetchLeaderboard();
-  }, [period]);
+  }, [period, scope]);
 
   const currentUserEntry = leaderboard.find((e) => e.isCurrentUser);
 
@@ -134,6 +182,33 @@ const Leaderboard = () => {
       </header>
 
       <main className="px-5 space-y-4">
+        {/* Scope Toggle */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="flex gap-2 p-1 glass rounded-xl"
+        >
+          <Button
+            variant={scope === "gym" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setScope("gym")}
+            className="flex-1 gap-2"
+          >
+            <Building2 className="w-4 h-4" />
+            My Gym
+          </Button>
+          <Button
+            variant={scope === "all" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setScope("all")}
+            className="flex-1 gap-2"
+          >
+            <Globe className="w-4 h-4" />
+            All Gyms
+          </Button>
+        </motion.div>
+
         {/* Period Toggle */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -229,12 +304,15 @@ const Leaderboard = () => {
                     🥈
                   </div>
                   <p className={cn(
-                    "font-semibold text-sm",
+                    "font-semibold text-sm text-center",
                     leaderboard[1].isCurrentUser ? "text-primary" : "text-foreground"
                   )}>
                     {leaderboard[1].name}
                     {leaderboard[1].isCurrentUser && " (You)"}
                   </p>
+                  {scope === "all" && leaderboard[1].gymName && (
+                    <p className="text-xs text-muted-foreground truncate max-w-16">{leaderboard[1].gymName}</p>
+                  )}
                   <p className="text-xs text-muted-foreground">{leaderboard[1].points.toLocaleString()}</p>
                   <div className="w-16 h-16 mt-2 rounded-t-lg bg-secondary/50 flex items-center justify-center">
                     <Medal className="w-5 h-5 text-muted-foreground" />
@@ -247,12 +325,15 @@ const Leaderboard = () => {
                     🥇
                   </div>
                   <p className={cn(
-                    "font-bold",
+                    "font-bold text-center",
                     leaderboard[0].isCurrentUser ? "text-primary" : "text-foreground"
                   )}>
                     {leaderboard[0].name}
                     {leaderboard[0].isCurrentUser && " (You)"}
                   </p>
+                  {scope === "all" && leaderboard[0].gymName && (
+                    <p className="text-xs text-muted-foreground truncate max-w-20">{leaderboard[0].gymName}</p>
+                  )}
                   <p className="text-sm text-primary font-semibold">{leaderboard[0].points.toLocaleString()}</p>
                   <div className="w-20 h-24 mt-2 rounded-t-lg bg-primary/20 flex items-center justify-center">
                     <Trophy className="w-6 h-6 text-primary" />
@@ -265,12 +346,15 @@ const Leaderboard = () => {
                     🥉
                   </div>
                   <p className={cn(
-                    "font-semibold text-sm",
+                    "font-semibold text-sm text-center",
                     leaderboard[2].isCurrentUser ? "text-primary" : "text-foreground"
                   )}>
                     {leaderboard[2].name}
                     {leaderboard[2].isCurrentUser && " (You)"}
                   </p>
+                  {scope === "all" && leaderboard[2].gymName && (
+                    <p className="text-xs text-muted-foreground truncate max-w-16">{leaderboard[2].gymName}</p>
+                  )}
                   <p className="text-xs text-muted-foreground">{leaderboard[2].points.toLocaleString()}</p>
                   <div className="w-16 h-12 mt-2 rounded-t-lg bg-secondary/30 flex items-center justify-center">
                     <Medal className="w-4 h-4 text-muted-foreground" />
@@ -312,7 +396,7 @@ const Leaderboard = () => {
                             {entry.isCurrentUser && " (You)"}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {entry.visits} visits
+                            {scope === "all" && entry.gymName ? `${entry.gymName} · ` : ""}{entry.visits} visits
                           </p>
                         </div>
                       </div>
