@@ -315,14 +315,15 @@ const Profile = () => {
           className="glass rounded-2xl p-5"
         >
           {isOwner ? (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-4">
+            <div className="space-y-6">
+              <div className="flex items-center gap-2">
                 <Building2 className="w-5 h-5 text-primary" />
                 <h2 className="font-semibold text-foreground">
                   {ownerGym ? "Manage Your Gym" : "Create Your Gym"}
                 </h2>
               </div>
               
+              {/* Gym Name */}
               <div className="space-y-2">
                 <Label htmlFor="gymName">Gym Name</Label>
                 <Input
@@ -333,39 +334,38 @@ const Profile = () => {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>Logo</Label>
-                <div className="flex items-center gap-4">
-                  {logoPreview ? (
-                    <img
-                      src={logoPreview}
-                      alt="Gym logo"
-                      className="w-16 h-16 rounded-xl object-cover"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center">
-                      <Building2 className="w-8 h-8 text-muted-foreground" />
-                    </div>
-                  )}
-                  <label className="cursor-pointer">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleLogoUpload}
-                      className="hidden"
-                    />
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors">
-                      <Upload className="w-4 h-4" />
-                      <span className="text-sm">{uploading ? "Uploading..." : "Upload"}</span>
-                    </div>
-                  </label>
-                </div>
+              {/* Logo Upload - Separate section */}
+              <div className="space-y-3">
+                <Label>Gym Logo</Label>
+                {logoPreview ? (
+                  <img
+                    src={logoPreview}
+                    alt="Gym logo"
+                    className="w-20 h-20 rounded-xl object-cover"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-xl bg-secondary flex items-center justify-center">
+                    <Building2 className="w-10 h-10 text-muted-foreground" />
+                  </div>
+                )}
+                <label className="cursor-pointer inline-block">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    className="hidden"
+                  />
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors">
+                    <Upload className="w-4 h-4" />
+                    <span className="text-sm">{uploading ? "Uploading..." : "Upload Logo"}</span>
+                  </div>
+                </label>
               </div>
 
               <Button
                 onClick={handleOwnerSave}
                 disabled={saving}
-                className="w-full mt-4"
+                className="w-full"
               >
                 {saving ? "Saving..." : ownerGym ? "Update Gym" : "Create Gym"}
               </Button>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Zap, Target, Trophy, Calendar, Dumbbell } from "lucide-react";
+import { Zap, Target, Trophy, Calendar, Dumbbell, Building2 } from "lucide-react";
 import { ProgressRing } from "@/components/member/ProgressRing";
 import { StatCard } from "@/components/member/StatCard";
 import { BottomNav } from "@/components/member/BottomNav";
@@ -10,10 +10,10 @@ import { StreakBadge } from "@/components/member/StreakBadge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 // Mock data - will be replaced with real data from Lovable Cloud
 const mockData = {
-  gymName: "FitZone Elite",
   weeklyGoal: 4,
   visitsThisWeek: 3,
   streak: 5,
@@ -23,13 +23,49 @@ const mockData = {
   hasGoal: true, // Set to false to test set goal flow
 };
 
+interface MemberGym {
+  id: string;
+  name: string;
+  logo_url: string | null;
+}
+
 const Index = () => {
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [visits, setVisits] = useState(mockData.visitsThisWeek);
   const [points, setPoints] = useState(mockData.totalPoints);
+  const [memberGym, setMemberGym] = useState<MemberGym | null>(null);
   const { toast } = useToast();
+
+  // Fetch member's gym info
+  useEffect(() => {
+    const fetchMemberGym = async () => {
+      if (!user) return;
+      
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("gym_id")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (profile?.gym_id) {
+        const { data: gym } = await supabase
+          .from("gyms")
+          .select("id, name, logo_url")
+          .eq("id", profile.gym_id)
+          .single();
+        
+        if (gym) {
+          setMemberGym(gym);
+        }
+      }
+    };
+
+    if (user) {
+      fetchMemberGym();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -83,20 +119,28 @@ const Index = () => {
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center justify-between"
         >
-          <div>
-            <p className="text-muted-foreground text-sm">Welcome back,</p>
-            <h1 className="text-2xl font-bold text-foreground">{userName}</h1>
+          <div className="flex items-center gap-3">
+            {memberGym?.logo_url ? (
+              <img
+                src={memberGym.logo_url}
+                alt={memberGym.name}
+                className="w-12 h-12 rounded-xl object-cover"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
+                <Building2 className="w-6 h-6 text-muted-foreground" />
+              </div>
+            )}
+            <div>
+              <p className="text-muted-foreground text-sm">Welcome back,</p>
+              <h1 className="text-2xl font-bold text-foreground">{userName}</h1>
+              <p className="text-sm text-primary">
+                {memberGym?.name || "No gym selected"}
+              </p>
+            </div>
           </div>
           <StreakBadge streak={mockData.streak} />
         </motion.div>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="text-sm text-primary mt-1"
-        >
-          {mockData.gymName}
-        </motion.p>
       </header>
 
       {/* Main Content */}
