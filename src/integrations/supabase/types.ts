@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       gyms: {
         Row: {
+          city: string | null
           created_at: string
           id: string
           logo_url: string | null
@@ -25,6 +26,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          city?: string | null
           created_at?: string
           id?: string
           logo_url?: string | null
@@ -34,6 +36,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          city?: string | null
           created_at?: string
           id?: string
           logo_url?: string | null
