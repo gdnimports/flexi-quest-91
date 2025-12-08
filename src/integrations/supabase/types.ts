@@ -44,6 +44,53 @@ export type Database = {
         }
         Relationships: []
       }
+      partners: {
+        Row: {
+          city: string
+          company_name: string
+          created_at: string
+          email: string
+          gym_id: string
+          id: string
+          phone: string
+          service_type: string
+          updated_at: string
+          website: string
+        }
+        Insert: {
+          city: string
+          company_name: string
+          created_at?: string
+          email: string
+          gym_id: string
+          id?: string
+          phone: string
+          service_type: string
+          updated_at?: string
+          website: string
+        }
+        Update: {
+          city?: string
+          company_name?: string
+          created_at?: string
+          email?: string
+          gym_id?: string
+          id?: string
+          phone?: string
+          service_type?: string
+          updated_at?: string
+          website?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partners_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
