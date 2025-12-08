@@ -30,6 +30,7 @@ import { z } from "zod";
 const gymSchema = z.object({
   name: z.string().min(2, "Gym name must be at least 2 characters").max(100, "Gym name must be less than 100 characters"),
   tagline: z.string().max(200, "Tagline must be less than 200 characters").optional(),
+  city: z.string().max(100, "City must be less than 100 characters").optional(),
 });
 
 const partnerSchema = z.object({
@@ -45,6 +46,7 @@ interface Gym {
   id: string;
   name: string;
   tagline: string | null;
+  city: string | null;
   logo_url: string | null;
   owner_id: string;
 }
@@ -84,6 +86,7 @@ const OwnerDashboard = () => {
   const [formData, setFormData] = useState({
     name: "",
     tagline: "",
+    city: "",
   });
   const [partnerFormData, setPartnerFormData] = useState({
     company_name: "",
@@ -138,6 +141,7 @@ const OwnerDashboard = () => {
         setFormData({
           name: gymData.name,
           tagline: gymData.tagline || "",
+          city: gymData.city || "",
         });
         setLogoPreview(gymData.logo_url);
         
@@ -262,6 +266,7 @@ const OwnerDashboard = () => {
           .update({
             name: formData.name,
             tagline: formData.tagline || null,
+            city: formData.city || null,
             logo_url: logoPreview,
           })
           .eq("id", gym.id);
@@ -276,6 +281,7 @@ const OwnerDashboard = () => {
             owner_id: user.id,
             name: formData.name,
             tagline: formData.tagline || null,
+            city: formData.city || null,
             logo_url: logoPreview,
           })
           .select()
@@ -514,6 +520,21 @@ const OwnerDashboard = () => {
                     <p className="text-xs text-muted-foreground">
                       {formData.tagline.length}/200 characters
                     </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="city" className="text-foreground">City</Label>
+                    <Input
+                      id="city"
+                      type="text"
+                      placeholder="New York"
+                      value={formData.city}
+                      onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                      className={`h-12 bg-muted/50 border-border rounded-xl ${errors.city ? "border-destructive" : ""}`}
+                    />
+                    {errors.city && (
+                      <p className="text-sm text-destructive">{errors.city}</p>
+                    )}
                   </div>
 
                   <Button 
