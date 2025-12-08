@@ -106,9 +106,11 @@ const Leaderboard = () => {
         // Fetch all members across all gyms
         setGymName("All Gyms");
 
+        // Only fetch members who have joined a gym
         const { data: allMembers } = await supabase
           .from("profiles")
-          .select("user_id, name, gym_id");
+          .select("user_id, name, gym_id")
+          .not("gym_id", "is", null);
 
         if (!allMembers || allMembers.length === 0) {
           setLeaderboard([]);
