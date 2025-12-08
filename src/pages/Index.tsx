@@ -27,6 +27,7 @@ interface MemberGym {
   id: string;
   name: string;
   logo_url: string | null;
+  tagline: string | null;
 }
 
 const Index = () => {
@@ -46,7 +47,7 @@ const Index = () => {
       // First check if user is an owner (owns a gym)
       const { data: ownedGym } = await supabase
         .from("gyms")
-        .select("id, name, logo_url")
+        .select("id, name, logo_url, tagline")
         .eq("owner_id", user.id)
         .maybeSingle();
       
@@ -65,7 +66,7 @@ const Index = () => {
       if (profile?.gym_id) {
         const { data: gym } = await supabase
           .from("gyms")
-          .select("id, name, logo_url")
+          .select("id, name, logo_url, tagline")
           .eq("id", profile.gym_id)
           .maybeSingle();
         
@@ -147,9 +148,14 @@ const Index = () => {
             <div>
               <p className="text-muted-foreground text-sm">Welcome back,</p>
               <h1 className="text-2xl font-bold text-foreground">{userName}</h1>
-              <p className="text-sm text-primary">
-                {memberGym?.name || "No gym selected"}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-primary">
+                  {memberGym?.name || "No gym selected"}
+                </p>
+                {memberGym?.tagline && (
+                  <span className="text-xs text-muted-foreground">• {memberGym.tagline}</span>
+                )}
+              </div>
             </div>
           </div>
           <StreakBadge streak={mockData.streak} />
