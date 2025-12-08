@@ -38,23 +38,36 @@ const Index = () => {
   const [memberGym, setMemberGym] = useState<MemberGym | null>(null);
   const { toast } = useToast();
 
-  // Fetch member's gym info
+  // Fetch user's gym info (works for both members and owners)
   useEffect(() => {
-    const fetchMemberGym = async () => {
+    const fetchUserGym = async () => {
       if (!user) return;
       
+      // First check if user is an owner (owns a gym)
+      const { data: ownedGym } = await supabase
+        .from("gyms")
+        .select("id, name, logo_url")
+        .eq("owner_id", user.id)
+        .maybeSingle();
+      
+      if (ownedGym) {
+        setMemberGym(ownedGym);
+        return;
+      }
+      
+      // If not owner, check member's gym via profile
       const { data: profile } = await supabase
         .from("profiles")
         .select("gym_id")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
       
       if (profile?.gym_id) {
         const { data: gym } = await supabase
           .from("gyms")
           .select("id, name, logo_url")
           .eq("id", profile.gym_id)
-          .single();
+          .maybeSingle();
         
         if (gym) {
           setMemberGym(gym);
@@ -63,7 +76,7 @@ const Index = () => {
     };
 
     if (user) {
-      fetchMemberGym();
+      fetchUserGym();
     }
   }, [user]);
 
