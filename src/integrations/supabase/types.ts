@@ -101,6 +101,7 @@ export type Database = {
           gym_id: string | null
           id: string
           name: string
+          total_points: number
           updated_at: string
           user_id: string
         }
@@ -110,6 +111,7 @@ export type Database = {
           gym_id?: string | null
           id?: string
           name: string
+          total_points?: number
           updated_at?: string
           user_id: string
         }
@@ -119,6 +121,7 @@ export type Database = {
           gym_id?: string | null
           id?: string
           name?: string
+          total_points?: number
           updated_at?: string
           user_id?: string
         }
@@ -152,6 +155,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      workouts: {
+        Row: {
+          calories_burned: number
+          created_at: string
+          exercises: Json
+          gym_id: string | null
+          id: string
+          points_earned: number
+          total_duration_minutes: number
+          user_id: string
+          workout_type: string
+        }
+        Insert: {
+          calories_burned?: number
+          created_at?: string
+          exercises?: Json
+          gym_id?: string | null
+          id?: string
+          points_earned?: number
+          total_duration_minutes?: number
+          user_id: string
+          workout_type: string
+        }
+        Update: {
+          calories_burned?: number
+          created_at?: string
+          exercises?: Json
+          gym_id?: string | null
+          id?: string
+          points_earned?: number
+          total_duration_minutes?: number
+          user_id?: string
+          workout_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workouts_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

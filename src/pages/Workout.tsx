@@ -25,14 +25,19 @@ import { cn } from "@/lib/utils";
 import { BottomNav } from "@/components/member/BottomNav";
 import { supabase } from "@/integrations/supabase/client";
 
+// Calories burned per minute based on national averages (moderate intensity)
+// Sources: Harvard Health, ACE Fitness, Mayo Clinic
 const workoutTypes = [
-  { value: "weights", label: "Weights", icon: Dumbbell, color: "text-blue-400" },
-  { value: "cardio", label: "Cardio", icon: Heart, color: "text-red-400" },
-  { value: "aerobics", label: "Aerobics", icon: Footprints, color: "text-purple-400" },
-  { value: "hiit", label: "HIIT", icon: Zap, color: "text-orange-400" },
-  { value: "spinning", label: "Spinning", icon: Bike, color: "text-green-400" },
-  { value: "other", label: "Other", icon: MoreHorizontal, color: "text-muted-foreground" },
+  { value: "weights", label: "Weights", icon: Dumbbell, color: "text-blue-400", caloriesPerMin: 5 },
+  { value: "cardio", label: "Cardio", icon: Heart, color: "text-red-400", caloriesPerMin: 10 },
+  { value: "aerobics", label: "Aerobics", icon: Footprints, color: "text-purple-400", caloriesPerMin: 8 },
+  { value: "hiit", label: "HIIT", icon: Zap, color: "text-orange-400", caloriesPerMin: 14 },
+  { value: "spinning", label: "Spinning", icon: Bike, color: "text-green-400", caloriesPerMin: 12 },
+  { value: "other", label: "Other", icon: MoreHorizontal, color: "text-muted-foreground", caloriesPerMin: 6 },
 ];
+
+// Points per calorie burned (1 point per 10 calories)
+const POINTS_PER_CALORIE = 0.1;
 
 interface Exercise {
   id: string;
@@ -132,15 +137,65 @@ const Workout = () => {
       return;
     }
 
+    if (!user || !selectedType) return;
+
     setIsSaving(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      // Get the workout type data for calorie calculation
+      const typeData = workoutTypes.find((t) => t.value === selectedType);
+      const caloriesPerMin = typeData?.caloriesPerMin || 6;
 
-    toast.success("Workout logged! +25 points earned 🎉");
-    navigate("/");
+      // Calculate total duration from exercises
+      let totalDuration = 0;
+      validExercises.forEach((ex) => {
+        if (ex.duration) {
+          totalDuration += ex.duration;
+        } else if (ex.sets && ex.reps) {
+          // Estimate ~1 minute per set for strength exercises
+          totalDuration += ex.sets;
+        }
+      });
 
-    setIsSaving(false);
+      // Calculate calories and points
+      const caloriesBurned = Math.round(totalDuration * caloriesPerMin);
+      const pointsEarned = Math.round(caloriesBurned * POINTS_PER_CALORIE);
+
+      // Get user's gym_id and current points from profile
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("gym_id, total_points")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      // Save workout to database
+      const { error: workoutError } = await supabase.from("workouts").insert([{
+        user_id: user.id,
+        gym_id: profile?.gym_id || null,
+        workout_type: selectedType,
+        exercises: validExercises as any,
+        total_duration_minutes: totalDuration,
+        calories_burned: caloriesBurned,
+        points_earned: pointsEarned,
+      }]);
+
+      if (workoutError) throw workoutError;
+
+      // Update user's total points
+      const currentPoints = profile?.total_points || 0;
+      await supabase
+        .from("profiles")
+        .update({ total_points: currentPoints + pointsEarned })
+        .eq("user_id", user.id);
+
+      toast.success(`Workout logged! 🔥 ${caloriesBurned} calories burned, +${pointsEarned} points earned!`);
+      navigate("/");
+    } catch (error: any) {
+      console.error("Failed to save workout:", error);
+      toast.error(error.message || "Failed to save workout");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (authLoading) {
