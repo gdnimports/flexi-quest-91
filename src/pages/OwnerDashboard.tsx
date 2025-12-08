@@ -224,11 +224,24 @@ const OwnerDashboard = () => {
       <header className="border-b border-border bg-card">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-primary" />
-            </div>
+            {gym?.logo_url ? (
+              <img 
+                src={gym.logo_url} 
+                alt={gym.name} 
+                className="w-10 h-10 rounded-xl object-cover"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Building2 className="w-5 h-5 text-primary" />
+              </div>
+            )}
             <div>
-              <h1 className="text-xl font-bold text-foreground">Fitdash Pro</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold text-foreground">{gym?.name || "Fitdash Pro"}</h1>
+                {gym?.tagline && (
+                  <span className="text-sm text-muted-foreground">• {gym.tagline}</span>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">Gym Owner Dashboard</p>
             </div>
           </div>
