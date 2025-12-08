@@ -1,4 +1,4 @@
-import { Home, Trophy, Gift, User, LogOut } from "lucide-react";
+import { Home, Trophy, Gift, User, LogOut, Handshake } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,7 @@ const navItems = [
   { icon: Home, label: "Home", path: "/" },
   { icon: Trophy, label: "Leaderboard", path: "/leaderboard" },
   { icon: Gift, label: "Rewards", path: "/rewards" },
+  { icon: Handshake, label: "Partners", path: "/partners" },
   { icon: User, label: "Profile", path: "/profile" },
 ];
 
