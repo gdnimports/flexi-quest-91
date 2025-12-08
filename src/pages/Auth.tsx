@@ -201,7 +201,7 @@ const Auth = () => {
             <img 
               src={fitdashLogo} 
               alt="Fitdash Pro" 
-              className="w-20 h-20 mx-auto rounded-full object-cover"
+              className="w-20 h-20 mx-auto"
             />
           </motion.div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Fitdash Pro</h1>
