@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Dumbbell, Mail, Lock, User, ArrowRight, Loader2 } from "lucide-react";
+import { Dumbbell, Mail, Lock, User, ArrowRight, Loader2, Building2 } from "lucide-react";
 import { z } from "zod";
 
 const signUpSchema = z.object({
@@ -20,8 +20,14 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+type UserType = "member" | "owner";
+
 const Auth = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [userType, setUserType] = useState<UserType>(
+    (searchParams.get("type") as UserType) || "member"
+  );
   const [isLogin, setIsLogin] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -33,16 +39,39 @@ const Auth = () => {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         if (session?.user) {
-          navigate("/");
+          // Check user role and redirect accordingly
+          const { data: roles } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", session.user.id);
+          
+          const isOwner = roles?.some(r => r.role === "owner");
+          
+          if (isOwner) {
+            navigate("/owner-dashboard");
+          } else {
+            navigate("/");
+          }
         }
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        navigate("/");
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id);
+        
+        const isOwner = roles?.some(r => r.role === "owner");
+        
+        if (isOwner) {
+          navigate("/owner-dashboard");
+        } else {
+          navigate("/");
+        }
       }
     });
 
@@ -78,11 +107,14 @@ const Auth = () => {
     
     setIsLoading(true);
 
+    // TEST MODE: Default password to 123456
+    const testPassword = "123456";
+
     try {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
           email: formData.email,
-          password: formData.password,
+          password: testPassword,
         });
 
         if (error) {
@@ -98,9 +130,9 @@ const Auth = () => {
       } else {
         const redirectUrl = `${window.location.origin}/`;
         
-        const { error } = await supabase.auth.signUp({
+        const { data: signUpData, error } = await supabase.auth.signUp({
           email: formData.email,
-          password: formData.password,
+          password: testPassword,
           options: {
             emailRedirectTo: redirectUrl,
             data: {
@@ -117,6 +149,17 @@ const Auth = () => {
             toast.error(error.message);
           }
           return;
+        }
+
+        // If owner, add owner role
+        if (userType === "owner" && signUpData.user) {
+          const { error: roleError } = await supabase
+            .from("user_roles")
+            .insert({ user_id: signUpData.user.id, role: "owner" as const });
+          
+          if (roleError) {
+            console.error("Error adding owner role:", roleError);
+          }
         }
 
         toast.success("Account created successfully!");
@@ -154,12 +197,47 @@ const Auth = () => {
             transition={{ type: "spring", duration: 0.6 }}
             className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 mb-4"
           >
-            <Dumbbell className="w-8 h-8 text-primary" />
+            {userType === "owner" ? (
+              <Building2 className="w-8 h-8 text-primary" />
+            ) : (
+              <Dumbbell className="w-8 h-8 text-primary" />
+            )}
           </motion.div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Fitdash Pro</h1>
           <p className="text-muted-foreground">
-            {isLogin ? "Welcome back, champion!" : "Gamify your fitness journey"}
+            {userType === "owner" 
+              ? (isLogin ? "Welcome back, gym owner!" : "Set up your gym")
+              : (isLogin ? "Welcome back, champion!" : "Gamify your fitness journey")
+            }
           </p>
+        </div>
+
+        {/* User Type Toggle */}
+        <div className="flex gap-2 mb-6 p-1 bg-muted rounded-xl">
+          <button
+            type="button"
+            onClick={() => setUserType("member")}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+              userType === "member" 
+                ? "bg-primary text-primary-foreground shadow-lg" 
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Dumbbell className="w-4 h-4" />
+            Member
+          </button>
+          <button
+            type="button"
+            onClick={() => setUserType("owner")}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+              userType === "owner" 
+                ? "bg-primary text-primary-foreground shadow-lg" 
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Building2 className="w-4 h-4" />
+            Gym Owner
+          </button>
         </div>
 
         {/* Form Card */}
@@ -167,7 +245,7 @@ const Auth = () => {
           layout
           className="bg-card border border-border rounded-3xl p-8 shadow-2xl"
         >
-          {/* Toggle Buttons */}
+          {/* Login/Signup Toggle */}
           <div className="flex gap-2 mb-6 p-1 bg-muted rounded-xl">
             <button
               type="button"
@@ -204,13 +282,15 @@ const Auth = () => {
                   transition={{ duration: 0.2 }}
                 >
                   <div className="space-y-2">
-                    <Label htmlFor="name" className="text-foreground">Name</Label>
+                    <Label htmlFor="name" className="text-foreground">
+                      {userType === "owner" ? "Your Name" : "Name"}
+                    </Label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                       <Input
                         id="name"
                         type="text"
-                        placeholder="Your name"
+                        placeholder={userType === "owner" ? "John Smith" : "Your name"}
                         value={formData.name}
                         onChange={(e) => handleInputChange("name", e.target.value)}
                         className={`pl-10 h-12 bg-muted/50 border-border rounded-xl ${errors.name ? "border-destructive" : ""}`}
@@ -258,6 +338,9 @@ const Auth = () => {
               {errors.password && (
                 <p className="text-sm text-destructive">{errors.password}</p>
               )}
+              <p className="text-xs text-muted-foreground">
+                Test mode: All passwords default to "123456"
+              </p>
             </div>
 
             <Button
