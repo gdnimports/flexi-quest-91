@@ -10,9 +10,11 @@ import {
   Shield,
   HelpCircle
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/member/BottomNav";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 const mockUser = {
   name: "Alex Johnson",
@@ -62,6 +64,13 @@ const MenuItem = ({ icon, label, value, onClick, variant = "default" }: MenuItem
 );
 
 const Profile = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
+
   return (
     <div className="min-h-screen pb-24">
       {/* Header */}
@@ -161,6 +170,7 @@ const Profile = () => {
             icon={<LogOut className="w-5 h-5 text-destructive" />}
             label="Log Out"
             variant="destructive"
+            onClick={handleLogout}
           />
         </motion.section>
 
