@@ -1,9 +1,12 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Gift, Star, Lock, Zap } from "lucide-react";
+import { Gift, Star, Zap, Loader2 } from "lucide-react";
 import { BottomNav } from "@/components/member/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Reward {
   id: string;
@@ -65,9 +68,32 @@ const mockRewards: Reward[] = [
   },
 ];
 
-const userPoints = 2450;
-
 const Rewards = () => {
+  const { user } = useAuth();
+  const [userPoints, setUserPoints] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserPoints = async () => {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("total_points")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!error && data) {
+        setUserPoints(data.total_points || 0);
+      }
+      setIsLoading(false);
+    };
+
+    fetchUserPoints();
+  }, [user]);
   return (
     <div className="min-h-screen pb-24">
       {/* Header */}
@@ -99,8 +125,14 @@ const Rewards = () => {
             <Zap className="w-5 h-5 text-primary" />
             <span className="text-sm text-muted-foreground uppercase tracking-wide">Your Balance</span>
           </div>
-          <p className="text-4xl font-bold text-gradient">{userPoints.toLocaleString()}</p>
-          <p className="text-muted-foreground mt-1">points available</p>
+          {isLoading ? (
+            <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+          ) : (
+            <>
+              <p className="text-4xl font-bold text-gradient">{userPoints.toLocaleString()}</p>
+              <p className="text-muted-foreground mt-1">points available</p>
+            </>
+          )}
         </motion.div>
 
         {/* Rewards Grid */}
