@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Dumbbell, Mail, Lock, User, ArrowRight, Loader2, Building2 } from "lucide-react";
-
+import fitdashLogo from "@/assets/fitdash-logo.png";
 import { z } from "zod";
 
 const signUpSchema = z.object({
@@ -190,15 +190,63 @@ const Auth = () => {
         transition={{ duration: 0.5 }}
         className="relative z-10 w-full max-w-md"
       >
-        {/* Tagline */}
+        {/* Logo & Tagline */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Fitdash Pro</h1>
-          <p className="text-muted-foreground">
+          <motion.div
+            initial={{ scale: 0, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            transition={{ type: "spring", duration: 0.6 }}
+            className="mb-6 relative flex items-center justify-center"
+          >
+            {/* Floating animation wrapper */}
+            <motion.div
+              animate={{ y: [-4, 4, -4] }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              className="relative"
+            >
+              {/* Glow pulse effect */}
+              <motion.div
+                className="absolute inset-0 blur-xl bg-primary/40 rounded-full"
+                animate={{
+                  opacity: [0.4, 0.7, 0.4],
+                  scale: [0.8, 1.1, 0.8],
+                }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+              <img 
+                src={fitdashLogo} 
+                alt="Fitdash Pro" 
+                className="relative w-24 h-24 object-contain drop-shadow-[0_0_20px_hsl(var(--primary)/0.6)]"
+              />
+            </motion.div>
+          </motion.div>
+          <motion.h1 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
+            className="text-3xl font-bold text-foreground mb-2"
+          >
+            Fitdash Pro
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+            className="text-muted-foreground"
+          >
             {userType === "owner" 
               ? (isLogin ? "Welcome back, gym owner!" : "Set up your gym")
               : (isLogin ? "Welcome back, champion!" : "Gamify your fitness journey")
             }
-          </p>
+          </motion.p>
         </div>
 
         {/* User Type Toggle */}
