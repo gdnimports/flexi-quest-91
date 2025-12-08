@@ -196,12 +196,38 @@ const Auth = () => {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", duration: 0.6 }}
-            className="mb-4"
+            className="mb-4 relative"
           >
+            {/* Shimmer glow effect */}
+            <motion.div
+              className="absolute inset-0 w-24 h-24 mx-auto rounded-full bg-gradient-to-r from-transparent via-primary/30 to-transparent"
+              animate={{
+                opacity: [0.3, 0.6, 0.3],
+                scale: [1, 1.1, 1],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
+            {/* Rotating ring */}
+            <motion.div
+              className="absolute inset-0 w-24 h-24 mx-auto rounded-full border-2 border-primary/20"
+              style={{
+                background: "conic-gradient(from 0deg, transparent, hsl(var(--primary) / 0.3), transparent)",
+              }}
+              animate={{ rotate: 360 }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: "linear",
+              }}
+            />
             <img 
               src={fitdashLogo} 
               alt="Fitdash Pro" 
-              className="w-20 h-20 mx-auto rounded-full object-cover"
+              className="relative w-20 h-20 mx-auto rounded-full object-cover shadow-lg shadow-primary/20"
             />
           </motion.div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Fitdash Pro</h1>
