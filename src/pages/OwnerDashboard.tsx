@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { 
   Building2, 
@@ -18,7 +19,8 @@ import {
   Loader2, 
   Save,
   LogOut,
-  Image as ImageIcon
+  Image as ImageIcon,
+  UserCircle
 } from "lucide-react";
 import { z } from "zod";
 
@@ -35,13 +37,22 @@ interface Gym {
   owner_id: string;
 }
 
+interface Member {
+  user_id: string;
+  name: string;
+  email: string;
+  created_at: string;
+}
+
 const OwnerDashboard = () => {
   const { user, isLoading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [gym, setGym] = useState<Gym | null>(null);
+  const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMembersLoading, setIsMembersLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({
@@ -94,11 +105,33 @@ const OwnerDashboard = () => {
           tagline: gymData.tagline || "",
         });
         setLogoPreview(gymData.logo_url);
+        
+        // Load members for this gym
+        loadMembers(gymData.id);
       }
     } catch (error) {
       console.error("Error loading gym:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadMembers = async (gymId: string) => {
+    setIsMembersLoading(true);
+    try {
+      const { data: membersData, error } = await supabase
+        .from("profiles")
+        .select("user_id, name, email, created_at")
+        .eq("gym_id", gymId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setMembers(membersData || []);
+    } catch (error) {
+      console.error("Error loading members:", error);
+      toast.error("Failed to load members");
+    } finally {
+      setIsMembersLoading(false);
     }
   };
 
@@ -375,10 +408,53 @@ const OwnerDashboard = () => {
               animate={{ opacity: 1, y: 0 }}
               className="bg-card border border-border rounded-3xl p-8"
             >
-              <h2 className="text-2xl font-bold text-foreground mb-4">Members</h2>
-              <p className="text-muted-foreground">
-                Member management coming soon. You'll be able to view and manage all gym members here.
-              </p>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-foreground">Members</h2>
+                <span className="text-sm text-muted-foreground">
+                  {members.length} member{members.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+
+              {!gym ? (
+                <p className="text-muted-foreground text-center py-8">
+                  Please create your gym first in the Configuration tab.
+                </p>
+              ) : isMembersLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                </div>
+              ) : members.length === 0 ? (
+                <div className="text-center py-12">
+                  <UserCircle className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">No members have joined your gym yet.</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Share your gym with members to get started.
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="font-semibold">Name</TableHead>
+                        <TableHead className="font-semibold">Email</TableHead>
+                        <TableHead className="font-semibold">Joined</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {members.map((member) => (
+                        <TableRow key={member.user_id}>
+                          <TableCell className="font-medium">{member.name || "—"}</TableCell>
+                          <TableCell className="text-muted-foreground">{member.email}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {new Date(member.created_at).toLocaleDateString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </motion.div>
           </TabsContent>
 
