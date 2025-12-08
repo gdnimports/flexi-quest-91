@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Dumbbell, Mail, Lock, User, ArrowRight, Loader2, Building2 } from "lucide-react";
+import fitdashLogo from "@/assets/fitdash-logo.png";
 import { z } from "zod";
 
 const signUpSchema = z.object({
@@ -195,13 +196,13 @@ const Auth = () => {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", duration: 0.6 }}
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 mb-4"
+            className="mb-4"
           >
-            {userType === "owner" ? (
-              <Building2 className="w-8 h-8 text-primary" />
-            ) : (
-              <Dumbbell className="w-8 h-8 text-primary" />
-            )}
+            <img 
+              src={fitdashLogo} 
+              alt="Fitdash Pro" 
+              className="w-20 h-20 mx-auto rounded-full object-cover"
+            />
           </motion.div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Fitdash Pro</h1>
           <p className="text-muted-foreground">
