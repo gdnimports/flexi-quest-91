@@ -224,7 +224,7 @@ const Auth = () => {
               <img 
                 src={fitdashLogo} 
                 alt="Fitdash Pro" 
-                className="relative w-32 h-32 object-contain drop-shadow-[0_0_25px_hsl(var(--primary)/0.7)]"
+                className="relative w-32 h-32 object-cover rounded-full drop-shadow-[0_0_25px_hsl(var(--primary)/0.7)]"
               />
             </motion.div>
           </motion.div>
