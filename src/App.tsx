@@ -12,6 +12,7 @@ import Auth from "./pages/Auth";
 import JoinGym from "./pages/JoinGym";
 import SetGoal from "./pages/SetGoal";
 import Workout from "./pages/Workout";
+import OwnerDashboard from "./pages/OwnerDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/join-gym" element={<JoinGym />} />
             <Route path="/set-goal" element={<SetGoal />} />
             <Route path="/workout" element={<Workout />} />
+            <Route path="/owner-dashboard" element={<OwnerDashboard />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/rewards" element={<Rewards />} />
             <Route path="/profile" element={<Profile />} />
