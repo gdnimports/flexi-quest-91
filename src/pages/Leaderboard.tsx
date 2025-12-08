@@ -289,135 +289,57 @@ const Leaderboard = () => {
             <p className="text-muted-foreground">No members yet. Join a gym to see the leaderboard!</p>
           </motion.div>
         ) : (
-          <>
-            {/* Top 3 Podium */}
-            {leaderboard.length >= 3 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="flex items-end justify-center gap-3 py-4"
-              >
-                {/* 2nd Place */}
-                <div className="flex flex-col items-center">
-                  <div className="w-16 h-16 rounded-full glass flex items-center justify-center mb-2">
-                    🥈
-                  </div>
-                  <p className={cn(
-                    "font-semibold text-sm text-center",
-                    leaderboard[1].isCurrentUser ? "text-primary" : "text-foreground"
-                  )}>
-                    {leaderboard[1].name}
-                    {leaderboard[1].isCurrentUser && " (You)"}
-                  </p>
-                  {scope === "all" && leaderboard[1].gymName && (
-                    <p className="text-xs text-muted-foreground truncate max-w-16">{leaderboard[1].gymName}</p>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="glass rounded-2xl overflow-hidden"
+          >
+            <div className="divide-y divide-border">
+              {leaderboard.map((entry, index) => (
+                <motion.div
+                  key={entry.rank}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 + index * 0.03 }}
+                  className={cn(
+                    "flex items-center justify-between p-4 transition-colors",
+                    entry.isCurrentUser && "bg-primary/10"
                   )}
-                  <p className="text-xs text-muted-foreground">{leaderboard[1].points.toLocaleString()}</p>
-                  <div className="w-16 h-16 mt-2 rounded-t-lg bg-secondary/50 flex items-center justify-center">
-                    <Medal className="w-5 h-5 text-muted-foreground" />
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 text-center">
+                      {getRankIcon(entry.rank)}
+                    </div>
+                    <div>
+                      <p className={cn(
+                        "font-medium",
+                        entry.isCurrentUser ? "text-primary" : "text-foreground"
+                      )}>
+                        {entry.name}
+                        {entry.isCurrentUser && " (You)"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {scope === "all" && entry.gymName ? `${entry.gymName} · ` : ""}{entry.visits} visits
+                      </p>
+                    </div>
                   </div>
-                </div>
-                
-                {/* 1st Place */}
-                <div className="flex flex-col items-center -mt-4">
-                  <div className="w-20 h-20 rounded-full glass border-2 border-primary flex items-center justify-center mb-2 glow-primary">
-                    🥇
+                  <div className="flex items-center gap-4">
+                    <span className="font-semibold text-foreground">
+                      {entry.points.toLocaleString()} pts
+                    </span>
+                    <div className={cn(
+                      "w-8 text-right text-sm font-medium",
+                      entry.change > 0 ? "text-primary" : 
+                      entry.change < 0 ? "text-destructive" : "text-muted-foreground"
+                    )}>
+                      {entry.change > 0 ? `+${entry.change}` : entry.change === 0 ? "—" : entry.change}
+                    </div>
                   </div>
-                  <p className={cn(
-                    "font-bold text-center",
-                    leaderboard[0].isCurrentUser ? "text-primary" : "text-foreground"
-                  )}>
-                    {leaderboard[0].name}
-                    {leaderboard[0].isCurrentUser && " (You)"}
-                  </p>
-                  {scope === "all" && leaderboard[0].gymName && (
-                    <p className="text-xs text-muted-foreground truncate max-w-20">{leaderboard[0].gymName}</p>
-                  )}
-                  <p className="text-sm text-primary font-semibold">{leaderboard[0].points.toLocaleString()}</p>
-                  <div className="w-20 h-24 mt-2 rounded-t-lg bg-primary/20 flex items-center justify-center">
-                    <Trophy className="w-6 h-6 text-primary" />
-                  </div>
-                </div>
-                
-                {/* 3rd Place */}
-                <div className="flex flex-col items-center">
-                  <div className="w-16 h-16 rounded-full glass flex items-center justify-center mb-2">
-                    🥉
-                  </div>
-                  <p className={cn(
-                    "font-semibold text-sm text-center",
-                    leaderboard[2].isCurrentUser ? "text-primary" : "text-foreground"
-                  )}>
-                    {leaderboard[2].name}
-                    {leaderboard[2].isCurrentUser && " (You)"}
-                  </p>
-                  {scope === "all" && leaderboard[2].gymName && (
-                    <p className="text-xs text-muted-foreground truncate max-w-16">{leaderboard[2].gymName}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground">{leaderboard[2].points.toLocaleString()}</p>
-                  <div className="w-16 h-12 mt-2 rounded-t-lg bg-secondary/30 flex items-center justify-center">
-                    <Medal className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Full Rankings */}
-            {leaderboard.length > 3 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="glass rounded-2xl overflow-hidden"
-              >
-                <div className="divide-y divide-border">
-                  {leaderboard.slice(3).map((entry, index) => (
-                    <motion.div
-                      key={entry.rank}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 + index * 0.03 }}
-                      className={cn(
-                        "flex items-center justify-between p-4 transition-colors",
-                        entry.isCurrentUser && "bg-primary/10"
-                      )}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-8 text-center">
-                          {getRankIcon(entry.rank)}
-                        </div>
-                        <div>
-                          <p className={cn(
-                            "font-medium",
-                            entry.isCurrentUser ? "text-primary" : "text-foreground"
-                          )}>
-                            {entry.name}
-                            {entry.isCurrentUser && " (You)"}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {scope === "all" && entry.gymName ? `${entry.gymName} · ` : ""}{entry.visits} visits
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className="font-semibold text-foreground">
-                          {entry.points.toLocaleString()}
-                        </span>
-                        <div className={cn(
-                          "w-8 text-right text-sm font-medium",
-                          entry.change > 0 ? "text-primary" : 
-                          entry.change < 0 ? "text-destructive" : "text-muted-foreground"
-                        )}>
-                          {entry.change > 0 ? `+${entry.change}` : entry.change === 0 ? "—" : entry.change}
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
         )}
       </main>
 
