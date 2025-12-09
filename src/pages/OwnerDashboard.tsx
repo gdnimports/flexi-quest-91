@@ -23,7 +23,11 @@ import {
   UserCircle,
   Handshake,
   Plus,
-  Trash2
+  Trash2,
+  TrendingUp,
+  Activity,
+  Flame,
+  Calendar
 } from "lucide-react";
 import { z } from "zod";
 
@@ -56,6 +60,20 @@ interface Member {
   name: string;
   email: string;
   created_at: string;
+  total_points: number;
+}
+
+interface MemberWithStats extends Member {
+  visits_this_week: number;
+  last_visit: string | null;
+  total_visits: number;
+}
+
+interface DashboardStats {
+  totalMembers: number;
+  visitsThisWeek: number;
+  activeMembers: number;
+  topEngaged: MemberWithStats[];
 }
 
 interface Partner {
@@ -75,7 +93,13 @@ const OwnerDashboard = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [gym, setGym] = useState<Gym | null>(null);
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<MemberWithStats[]>([]);
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
+    totalMembers: 0,
+    visitsThisWeek: 0,
+    activeMembers: 0,
+    topEngaged: [],
+  });
   const [partners, setPartners] = useState<Partner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMembersLoading, setIsMembersLoading] = useState(false);
@@ -178,14 +202,71 @@ const OwnerDashboard = () => {
   const loadMembers = async (gymId: string) => {
     setIsMembersLoading(true);
     try {
-      const { data: membersData, error } = await supabase
+      // Fetch members with their profiles
+      const { data: membersData, error: membersError } = await supabase
         .from("profiles")
-        .select("user_id, name, email, created_at")
+        .select("user_id, name, email, created_at, total_points")
         .eq("gym_id", gymId)
-        .order("created_at", { ascending: false });
+        .order("total_points", { ascending: false });
 
-      if (error) throw error;
-      setMembers(membersData || []);
+      if (membersError) throw membersError;
+
+      // Calculate start of current week (Sunday)
+      const now = new Date();
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      // Fetch all workouts for this gym
+      const { data: workoutsData, error: workoutsError } = await supabase
+        .from("workouts")
+        .select("user_id, created_at")
+        .eq("gym_id", gymId);
+
+      if (workoutsError) throw workoutsError;
+
+      // Create a map of user workout stats
+      const userWorkoutStats: Record<string, { total: number; thisWeek: number; lastVisit: string | null }> = {};
+      
+      (workoutsData || []).forEach((workout) => {
+        if (!userWorkoutStats[workout.user_id]) {
+          userWorkoutStats[workout.user_id] = { total: 0, thisWeek: 0, lastVisit: null };
+        }
+        userWorkoutStats[workout.user_id].total++;
+        
+        const workoutDate = new Date(workout.created_at);
+        if (workoutDate >= startOfWeek) {
+          userWorkoutStats[workout.user_id].thisWeek++;
+        }
+        
+        if (!userWorkoutStats[workout.user_id].lastVisit || 
+            workoutDate > new Date(userWorkoutStats[workout.user_id].lastVisit!)) {
+          userWorkoutStats[workout.user_id].lastVisit = workout.created_at;
+        }
+      });
+
+      // Merge member data with workout stats
+      const membersWithStats: MemberWithStats[] = (membersData || []).map((member) => ({
+        ...member,
+        visits_this_week: userWorkoutStats[member.user_id]?.thisWeek || 0,
+        last_visit: userWorkoutStats[member.user_id]?.lastVisit || null,
+        total_visits: userWorkoutStats[member.user_id]?.total || 0,
+      }));
+
+      // Calculate dashboard stats
+      const visitsThisWeek = membersWithStats.reduce((sum, m) => sum + m.visits_this_week, 0);
+      const activeMembers = membersWithStats.filter((m) => m.visits_this_week > 0).length;
+      const topEngaged = [...membersWithStats]
+        .sort((a, b) => b.total_points - a.total_points)
+        .slice(0, 5);
+
+      setMembers(membersWithStats);
+      setDashboardStats({
+        totalMembers: membersWithStats.length,
+        visitsThisWeek,
+        activeMembers,
+        topEngaged,
+      });
     } catch (error) {
       console.error("Error loading members:", error);
       toast.error("Failed to load members");
@@ -560,55 +641,165 @@ const OwnerDashboard = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-card border border-border rounded-3xl p-8"
+              className="space-y-6"
             >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-foreground">Members</h2>
-                <span className="text-sm text-muted-foreground">
-                  {members.length} member{members.length !== 1 ? "s" : ""}
-                </span>
-              </div>
+              {/* Stats Cards */}
+              {gym && !isMembersLoading && members.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-card border border-border rounded-2xl p-5">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <Users className="w-5 h-5 text-primary" />
+                      </div>
+                      <span className="text-sm text-muted-foreground">Total Members</span>
+                    </div>
+                    <p className="text-3xl font-bold text-foreground">{dashboardStats.totalMembers}</p>
+                  </div>
 
-              {!gym ? (
-                <p className="text-muted-foreground text-center py-8">
-                  Please create your gym first in the Configuration tab.
-                </p>
-              ) : isMembersLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                </div>
-              ) : members.length === 0 ? (
-                <div className="text-center py-12">
-                  <UserCircle className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground">No members have joined your gym yet.</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Share your gym with members to get started.
-                  </p>
-                </div>
-              ) : (
-                <div className="rounded-xl border border-border overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/50">
-                        <TableHead className="font-semibold">Name</TableHead>
-                        <TableHead className="font-semibold">Email</TableHead>
-                        <TableHead className="font-semibold">Joined</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {members.map((member) => (
-                        <TableRow key={member.user_id}>
-                          <TableCell className="font-medium">{member.name || "—"}</TableCell>
-                          <TableCell className="text-muted-foreground">{member.email}</TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {new Date(member.created_at).toLocaleDateString()}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <div className="bg-card border border-border rounded-2xl p-5">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-xl bg-chart-2/10 flex items-center justify-center">
+                        <Activity className="w-5 h-5 text-chart-2" />
+                      </div>
+                      <span className="text-sm text-muted-foreground">Visits This Week</span>
+                    </div>
+                    <p className="text-3xl font-bold text-foreground">{dashboardStats.visitsThisWeek}</p>
+                  </div>
+
+                  <div className="bg-card border border-border rounded-2xl p-5">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-xl bg-chart-3/10 flex items-center justify-center">
+                        <TrendingUp className="w-5 h-5 text-chart-3" />
+                      </div>
+                      <span className="text-sm text-muted-foreground">Active This Week</span>
+                    </div>
+                    <p className="text-3xl font-bold text-foreground">
+                      {dashboardStats.activeMembers}
+                      <span className="text-sm font-normal text-muted-foreground ml-2">
+                        ({dashboardStats.totalMembers > 0 ? Math.round((dashboardStats.activeMembers / dashboardStats.totalMembers) * 100) : 0}%)
+                      </span>
+                    </p>
+                  </div>
+
+                  <div className="bg-card border border-border rounded-2xl p-5">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-xl bg-chart-4/10 flex items-center justify-center">
+                        <Flame className="w-5 h-5 text-chart-4" />
+                      </div>
+                      <span className="text-sm text-muted-foreground">Avg Visits/Member</span>
+                    </div>
+                    <p className="text-3xl font-bold text-foreground">
+                      {dashboardStats.totalMembers > 0 
+                        ? (dashboardStats.visitsThisWeek / dashboardStats.totalMembers).toFixed(1) 
+                        : "0"}
+                    </p>
+                  </div>
                 </div>
               )}
+
+              {/* Top Engaged Members */}
+              {gym && !isMembersLoading && dashboardStats.topEngaged.length > 0 && (
+                <div className="bg-card border border-border rounded-2xl p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Trophy className="w-5 h-5 text-primary" />
+                    Top Engaged Members
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                    {dashboardStats.topEngaged.map((member, index) => (
+                      <div 
+                        key={member.user_id}
+                        className="bg-muted/30 rounded-xl p-4 flex items-center gap-3"
+                      >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                          index === 0 ? "bg-yellow-500/20 text-yellow-500" :
+                          index === 1 ? "bg-gray-400/20 text-gray-400" :
+                          index === 2 ? "bg-amber-600/20 text-amber-600" :
+                          "bg-muted text-muted-foreground"
+                        }`}>
+                          #{index + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-foreground truncate">{member.name || "—"}</p>
+                          <p className="text-xs text-muted-foreground">{member.total_points} pts</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Members Table */}
+              <div className="bg-card border border-border rounded-3xl p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-foreground">All Members</h2>
+                  <span className="text-sm text-muted-foreground">
+                    {members.length} member{members.length !== 1 ? "s" : ""}
+                  </span>
+                </div>
+
+                {!gym ? (
+                  <p className="text-muted-foreground text-center py-8">
+                    Please create your gym first in the Configuration tab.
+                  </p>
+                ) : isMembersLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  </div>
+                ) : members.length === 0 ? (
+                  <div className="text-center py-12">
+                    <UserCircle className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-muted-foreground">No members have joined your gym yet.</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Share your gym with members to get started.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-border overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/50">
+                          <TableHead className="font-semibold">Name</TableHead>
+                          <TableHead className="font-semibold">Email</TableHead>
+                          <TableHead className="font-semibold">Visits This Week</TableHead>
+                          <TableHead className="font-semibold">Total Visits</TableHead>
+                          <TableHead className="font-semibold">Points</TableHead>
+                          <TableHead className="font-semibold">Last Visit</TableHead>
+                          <TableHead className="font-semibold">Joined</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {members.map((member) => (
+                          <TableRow key={member.user_id}>
+                            <TableCell className="font-medium">{member.name || "—"}</TableCell>
+                            <TableCell className="text-muted-foreground">{member.email}</TableCell>
+                            <TableCell>
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                                member.visits_this_week >= 3 
+                                  ? "bg-primary/10 text-primary" 
+                                  : member.visits_this_week > 0 
+                                    ? "bg-chart-2/10 text-chart-2"
+                                    : "bg-muted text-muted-foreground"
+                              }`}>
+                                {member.visits_this_week}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">{member.total_visits}</TableCell>
+                            <TableCell className="font-medium text-primary">{member.total_points}</TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {member.last_visit 
+                                ? new Date(member.last_visit).toLocaleDateString()
+                                : "—"}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {new Date(member.created_at).toLocaleDateString()}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
             </motion.div>
           </TabsContent>
 
