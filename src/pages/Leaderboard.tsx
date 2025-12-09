@@ -37,7 +37,7 @@ const Leaderboard = () => {
   const [scope, setScope] = useState<Scope>("gym");
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [gymName, setGymName] = useState<string>("Fitdash Pro");
+  const [gymName, setGymName] = useState<string>("FitDash Pro");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

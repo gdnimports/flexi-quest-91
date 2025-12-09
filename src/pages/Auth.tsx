@@ -223,7 +223,7 @@ const Auth = () => {
               />
               <img 
                 src={fitdashLogo} 
-                alt="Fitdash Pro" 
+                alt="FitDash Pro" 
                 className="relative w-32 h-32 object-cover rounded-full drop-shadow-[0_0_25px_hsl(var(--primary)/0.7)]"
               />
             </motion.div>
@@ -234,7 +234,7 @@ const Auth = () => {
             transition={{ delay: 0.2, duration: 0.4 }}
             className="text-3xl font-bold text-foreground mb-2"
           >
-            Fitdash Pro
+            FitDash Pro
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0 }}

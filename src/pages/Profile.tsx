@@ -475,7 +475,7 @@ const Profile = () => {
           transition={{ delay: 0.3 }}
           className="text-center text-xs text-muted-foreground py-4"
         >
-          Fitdash Pro v1.0.0
+          FitDash Pro v1.0.0
         </motion.p>
       </main>
 

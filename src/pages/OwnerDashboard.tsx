@@ -405,7 +405,7 @@ const OwnerDashboard = () => {
             )}
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold text-foreground">{gym?.name || "Fitdash Pro"}</h1>
+                <h1 className="text-xl font-bold text-foreground">{gym?.name || "FitDash Pro"}</h1>
                 {gym?.tagline && (
                   <span className="text-sm text-muted-foreground">• {gym.tagline}</span>
                 )}
