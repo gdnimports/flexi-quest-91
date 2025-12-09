@@ -164,7 +164,7 @@ const JoinGym = () => {
                 {searchQuery ? "No gyms found matching your search" : "No gyms available yet"}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                Ask your gym owner to set up their gym on Fitdash Pro
+                Ask your gym owner to set up their gym on FitDash Pro
               </p>
             </div>
           ) : (
